@@ -3,7 +3,7 @@
 <h1>Spotify MCP Server</h1>
 </div>
 
-A lightweight [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that enables AI assistants like Cursor & Claude to control Spotify playback and manage playlists.
+A lightweight [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that enables AI assistants like Cursor, Claude & opencode to control Spotify playback and manage playlists.
 
 <details>
 <summary>Contents</summary>
@@ -11,8 +11,8 @@ A lightweight [Model Context Protocol (MCP)](https://modelcontextprotocol.io) se
 - [Example Interactions](#example-interactions)
 - [Tools](#tools)
   - [Read Operations](#read-operations)
+  - [Playback Operations](#playback-operations)
   - [Album Operations](#album-operations)
-  - [Play / Create Operations](#play--create-operations)
   - [Playlist Operations](#playlist-operations)
 - [Setup](#setup)
   - [Prerequisites](#prerequisites)
@@ -20,7 +20,7 @@ A lightweight [Model Context Protocol (MCP)](https://modelcontextprotocol.io) se
   - [Creating a Spotify Developer Application](#creating-a-spotify-developer-application)
   - [Spotify API Configuration](#spotify-api-configuration)
   - [Authentication Process](#authentication-process)
-- [Integrating with Claude Desktop, Cursor, and VsCode (Cline)](#integrating-with-claude-desktop-and-cursor)
+- [Integrating with Claude Desktop, Cursor, opencode, and VsCode (Cline)](#integrating-with-claude-desktop-cursor-opencode-and-vscode-cline)
 </details>
 
 ## Example Interactions
@@ -29,6 +29,12 @@ A lightweight [Model Context Protocol (MCP)](https://modelcontextprotocol.io) se
 - _"Create a Taylor Swift / Slipknot fusion playlist"_
 - _"Copy all the techno tracks from my workout playlist to my work playlist"_
 - _"Turn the volume down a bit"_
+- _"What are my most played songs this month?"_
+- _"Get the audio features of this song - is it danceable?"_
+- _"Recommend me some songs similar to this playlist"_
+- _"Seek to the chorus at 1:30"_
+- _"Turn on repeat for this album"_
+- _"Move playback to my living room speaker"_
 
 ## Tools
 
@@ -110,8 +116,48 @@ A lightweight [Model Context Protocol (MCP)](https://modelcontextprotocol.io) se
    - **Returns**: Success confirmation message
    - **Example**: `removeUsersSavedTracks({ trackIds: ["4iV5W9uYEdYUVa79Axb7Rh", "1301WleyT98MSxVHPZCA6M"] })`
 
+10. **getTopItems**
 
-### Play / Create Operations
+    - **Description**: Get the user's top artists or tracks based on calculated affinity
+    - **Parameters**:
+      - `type` (string): Whether to get "artists" or "tracks"
+      - `timeRange` (string, optional): "short_term" (~4 weeks), "medium_term" (~6 months, default), or "long_term" (~years)
+      - `limit` (number, optional): Maximum number of items to return (1-50, default: 20)
+    - **Returns**: List of top artists or tracks for the selected time range
+    - **Example**: `getTopItems({ type: "tracks", timeRange: "short_term", limit: 10 })`
+
+11. **getAudioFeatures**
+
+    - **Description**: Get audio features for one or more tracks (danceability, energy, tempo, valence, etc.)
+    - **Parameters**:
+      - `trackIds` (string|array): A single track ID or array of track IDs (max 100)
+    - **Returns**: Detailed audio features including danceability, energy, valence, tempo, key, mode, acousticness, instrumentalness, liveness, speechiness, and loudness
+    - **Example**: `getAudioFeatures({ trackIds: "4iV5W9uYEdYUVa79Axb7Rh" })`
+    - **Multiple**: `getAudioFeatures({ trackIds: ["id1", "id2", "id3"] })`
+
+12. **getRecommendations**
+
+    - **Description**: Get track recommendations based on seed artists, genres, and tracks
+    - **Parameters**:
+      - `seedArtists` (array, optional): Array of Spotify artist IDs (max 5 total seeds)
+      - `seedGenres` (array, optional): Array of genre names (e.g. "rock", "pop")
+      - `seedTracks` (array, optional): Array of Spotify track IDs (max 5 total seeds)
+      - `limit` (number, optional): Number of recommendations (1-100, default: 20)
+      - `targetDanceability` (number, optional): Target danceability (0-1)
+      - `targetEnergy` (number, optional): Target energy (0-1)
+      - `targetValence` (number, optional): Target valence/positivity (0-1)
+      - `targetTempo` (number, optional): Target tempo in BPM
+    - **Returns**: List of recommended tracks based on the provided seeds
+    - **Example**: `getRecommendations({ seedGenres: ["rock", "alternative"], limit: 20 })`
+
+13. **getAvailableGenres**
+
+    - **Description**: Get a list of available genre seeds for use with recommendations
+    - **Parameters**: None
+    - **Returns**: List of all available genre seeds
+    - **Example**: `getAvailableGenres()`
+
+### Playback Operations
 
 1. **playMusic**
 
@@ -200,14 +246,49 @@ A lightweight [Model Context Protocol (MCP)](https://modelcontextprotocol.io) se
 
 10. **adjustVolume**
 
-   - **Description**: Adjust the playback volume up or down by a relative amount (requires Spotify Premium)
-   - **Parameters**:
-     - `adjustment` (number): The amount to adjust volume by (-100 to 100). Positive values increase volume, negative values decrease it.
-     - `deviceId` (string, optional): ID of the device to adjust volume on
-   - **Returns**: Success status showing the volume change (e.g., "Volume increased from 50% to 60%")
-   - **Example**: `adjustVolume({ adjustment: 10 })` (increase by 10%)
-   - **Example**: `adjustVolume({ adjustment: -20 })` (decrease by 20%)
+    - **Description**: Adjust the playback volume up or down by a relative amount (requires Spotify Premium)
+    - **Parameters**:
+      - `adjustment` (number): The amount to adjust volume by (-100 to 100). Positive values increase volume, negative values decrease it.
+      - `deviceId` (string, optional): ID of the device to adjust volume on
+    - **Returns**: Success status showing the volume change (e.g., "Volume increased from 50% to 60%")
+    - **Example**: `adjustVolume({ adjustment: 10 })` (increase by 10%)
+    - **Example**: `adjustVolume({ adjustment: -20 })` (decrease by 20%)
 
+11. **seekToPosition**
+
+    - **Description**: Seek to a specific position (in milliseconds) in the currently playing track
+    - **Parameters**:
+      - `positionMs` (number): Position in milliseconds to seek to
+      - `deviceId` (string, optional): ID of the device to seek on
+    - **Returns**: Success status with the new position
+    - **Example**: `seekToPosition({ positionMs: 90000 })` (seek to 1:30)
+
+12. **setRepeatMode**
+
+    - **Description**: Set the repeat mode for the current playback
+    - **Parameters**:
+      - `state` (string): "track" (repeat current song), "context" (repeat playlist/album), or "off"
+      - `deviceId` (string, optional): ID of the device
+    - **Returns**: Success status with the new repeat mode
+    - **Example**: `setRepeatMode({ state: "track" })`
+
+13. **setShuffleMode**
+
+    - **Description**: Toggle shuffle mode on or off for the current playback
+    - **Parameters**:
+      - `state` (boolean): true to enable shuffle, false to disable
+      - `deviceId` (string, optional): ID of the device
+    - **Returns**: Success status with the new shuffle state
+    - **Example**: `setShuffleMode({ state: true })`
+
+14. **transferPlayback**
+
+    - **Description**: Transfer playback to a different Spotify Connect device
+    - **Parameters**:
+      - `deviceId` (string): The Spotify device ID to transfer playback to
+      - `play` (boolean, optional): If true, ensures playback starts on the new device (default: true)
+    - **Returns**: Success status confirming the transfer
+    - **Example**: `transferPlayback({ deviceId: "abc123def456" })`
 
 ### Album Operations
 
@@ -301,8 +382,8 @@ A lightweight [Model Context Protocol (MCP)](https://modelcontextprotocol.io) se
 ### Installation
 
 ```bash
-git clone https://github.com/marcelmarais/spotify-mcp-server.git
-cd spotify-mcp-server
+git clone https://github.com/srsergi0/spotify-mcp-plus.git
+cd spotify-mcp-plus
 npm install
 npm run build
 ```
@@ -373,7 +454,9 @@ npm run auth
 
 7. **Automatic Token Refresh**: The server will automatically refresh the access token when it expires (typically after 1 hour). The refresh happens transparently using the `refreshToken`, so you don't need to re-authenticate manually. If the refresh fails, you'll need to run `npm run auth` again to re-authenticate.
 
-## Integrating with Claude Desktop, Cursor, and VsCode [Via Cline model extension](https://marketplace.visualstudio.com/items/?itemName=saoudrizwan.claude-dev)
+## Integrating with Claude Desktop, Cursor, opencode, and VsCode [Via Cline model extension](https://marketplace.visualstudio.com/items/?itemName=saoudrizwan.claude-dev)
+
+### Claude Desktop
 
 To use your MCP server with Claude Desktop, add it to your Claude configuration:
 
@@ -382,17 +465,37 @@ To use your MCP server with Claude Desktop, add it to your Claude configuration:
   "mcpServers": {
     "spotify": {
       "command": "node",
-      "args": ["spotify-mcp-server/build/index.js"]
+      "args": ["path/to/spotify-mcp-server/build/index.js"]
     }
   }
 }
 ```
+
+### Cursor
 
 For Cursor, go to the MCP tab in `Cursor Settings` (command + shift + J). Add a server with this command:
 
 ```bash
 node path/to/spotify-mcp-server/build/index.js
 ```
+
+### opencode
+
+For opencode, add the MCP server to your `opencode.json`:
+
+```json
+{
+  "mcp": {
+    "spotify": {
+      "type": "local",
+      "command": ["node", "path/to/spotify-mcp-server/build/index.js"],
+      "enabled": true
+    }
+  }
+}
+```
+
+### VsCode (Cline)
 
 To set up your MCP correctly with Cline ensure you have the following file configuration set `cline_mcp_settings.json`:
 

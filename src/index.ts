@@ -17,8 +17,12 @@ const server = new McpServer({
   },
 );
 
-// Proactively refresh the Spotify token every 45 minutes so it never
-// expires mid-session (tokens last 60 minutes; this keeps a safe buffer).
+// Proactively refresh the Spotify token so it never expires mid-session.
+// The SDK's internal refresh uses PKCE (no client_secret) so it fails for
+// Authorization Code flow. Instead, our createSpotifyApi() refreshes via
+// Basic Auth and sets expires=MAX_SAFE_INTEGER on the SDK instance to
+// prevent it from ever attempting its own refresh.
+// Interval of 25 minutes ensures we always catch the 60-minute expiry.
 setInterval(
   async () => {
     try {
@@ -27,7 +31,7 @@ setInterval(
       // Errors will surface on the next tool call; nothing actionable here.
     }
   },
-  45 * 60 * 1000,
+  25 * 60 * 1000,
 );
 
 async function main() {

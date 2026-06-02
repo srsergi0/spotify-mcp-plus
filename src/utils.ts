@@ -125,8 +125,10 @@ export async function createSpotifyApi(): Promise<SpotifyApi> {
 
   if (config.accessToken && config.refreshToken) {
     const now = Date.now();
+    // Refresh if token expires within the next 30 minutes.
+    // This ensures the 25-minute proactive interval always catches it.
     const shouldRefresh =
-      !config.expiresAt || config.expiresAt <= now + 5 * 60 * 1000;
+      !config.expiresAt || config.expiresAt <= now + 30 * 60 * 1000;
 
     if (shouldRefresh) {
       console.log(
@@ -135,11 +137,11 @@ export async function createSpotifyApi(): Promise<SpotifyApi> {
       try {
         const tokens = await refreshAccessToken(config);
         config.accessToken = tokens.access_token;
-        config.expiresAt = now + tokens.expires_in * 1000; // Convert seconds to milliseconds
+        config.expiresAt = now + tokens.expires_in * 1000;
         saveSpotifyConfig(config);
         console.log('Access token refreshed successfully');
 
-        // Clear cached API instance to force recreation with new token
+        // Clear cached API instance to force recreation with fresh token
         cachedSpotifyApi = null;
       } catch (error) {
         console.error('Failed to refresh token:', error);
@@ -153,13 +155,15 @@ export async function createSpotifyApi(): Promise<SpotifyApi> {
       return cachedSpotifyApi;
     }
 
+    // Set expires to MAX_SAFE_INTEGER so the SDK never triggers its internal
+    // token refresh (which uses PKCE-only and fails without client_secret).
+    // Our proactive 25-minute interval handles all refreshes instead.
     const accessToken = {
       access_token: config.accessToken,
       token_type: 'Bearer',
-      expires_in: Math.floor(
-        ((config.expiresAt ?? now + 3600000) - now) / 1000,
-      ),
+      expires_in: 99999,
       refresh_token: config.refreshToken,
+      expires: Number.MAX_SAFE_INTEGER,
     };
 
     cachedSpotifyApi = SpotifyApi.withAccessToken(config.clientId, accessToken);
