@@ -1,5 +1,4 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { McpServer, StdioServerTransport } from 'mcp-lite';
 import { albumTools } from './albums.js';
 import { playTools } from './play.js';
 import { playlistTools } from './playlist.js';

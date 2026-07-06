@@ -1,8 +1,8 @@
-import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
+import type { RequestHandlerExtra } from 'mcp-lite';
 import type {
   ServerNotification,
   ServerRequest,
-} from '@modelcontextprotocol/sdk/types.js';
+} from 'mcp-lite';
 import type { z } from 'zod';
 
 export type SpotifyHandlerExtra = RequestHandlerExtra<
